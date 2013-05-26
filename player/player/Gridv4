@@ -1,0 +1,738 @@
+
+/* Grid.java */
+/* This is before functions are tried to be split into different criteria*/
+package player;
+
+/* Grid is esentially an object that will contain the game board and various other methods that will do the game tree analysis*/
+import java.lang.Math;
+import list.*;
+
+public class Grid {
+    public static final int SIZE = 8;
+    public static final int EMPTY = 0;
+    public static final int MY_TOKEN = 1;
+    public static final int OPPONENT_TOKEN = 2;
+    
+    protected int[][] board;
+    protected MachinePlayer me;
+    
+    protected Grid(MachinePlayer indv) {
+        board = new int[8][8];
+        me = indv;
+        
+    }
+    /* This is method is looking to see if a move is valid*/
+    protected boolean isValid(Move aMove, int color) {
+        if (board[aMove.x1][aMove.y1]!=0){
+            return false;
+        }
+        if (me.moves<=10) {
+            if (aMove.moveKind==Move.STEP) {       //This case is checking if you haven't placed all 10 chips, then you can't step
+                return false;
+            }
+        }
+        else {
+            if (aMove.moveKind==Move.ADD); {     //This checks that if there are less than 10 moves
+                return false;
+            }
+        }
+        if((aMove.x1==0 && aMove.y1==0) || (aMove.x1==7 && aMove.y1==0) || (aMove.x1==7 && aMove.y1==0) || (aMove.x1==7 && aMove.y1==7)) {
+                return false;               //Makes sure you can't place pieces in the corners
+            }
+        
+        if ((color==0) && (aMove.x1==0 || aMove.x1==7)) {
+                return false;           //Can't put black pieces in a white goal
+            }
+        else if ((color==1) && (aMove.y1==0 || aMove.y1==7)) {
+                return false;           //Can't put white pieces in a black goal
+        }
+        else if (board[aMove.x1][aMove.y1]==0) {
+            if (surround(aMove.x1,aMove.y1,color,false)) {
+                    return true;          //makes sure that there are no surrouding pieces
+            }
+            else {
+                return false;
+            }
+        }
+        //The quit case hasn't been handled
+        return true;
+    }
+    
+    /* This function is a helper that will check the surroundings to check and see if there are a cluster of chips around it */
+    protected boolean surround(int x, int y, int color, boolean twice) {
+        //the boolean twice checks to see if this is the second time it is being called.
+        int pieceCount=0;
+        int pX=0;
+        int pY=0; /*These will keep track of a pieces found x and Y location, that way, it can take that piece and see if it has surroundings
+        int a & b will keep track of a piece that was already counted */
+        for (int i=-1; i<2; i++) {
+            for (int j=-1; j<2; j++) {
+                if ((x+i>0) && (x+i<7) && (y+j>0) && (y+j<7)) {
+                    //This checks through the loop and looks for surrounding pieces
+                    if (color==me.myColor){
+                        if (board[x+i][y+j]==1) {
+                            if (x+i!=0 || y+j!=0) {
+                                pX = x+i;
+                                pY = y+j;
+                                if (pieceCount==0) {
+                                    pieceCount++;
+                                    pX = x+i;
+                                    pY = y+j;
+                                }
+                                else {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (board[x+i][y+j]==2) {
+                            if (x+i!=0 || y+j!=0) {
+                                pX = x+i;
+                                pY = y+j;
+                                if (pieceCount==0) {
+                                    pieceCount++;
+                                    pX = x+i;
+                                    pY = y+j;
+                                }
+                                else {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (pieceCount==0) {    //If there are no pieces surrounding
+            return true;
+        }
+        if (pieceCount>1) {     //If there is more than one piece surrounding
+            return false;
+        }
+        if (pieceCount==1 && twice==true) {
+            return true;
+        }
+        if (pieceCount==1 && surround(pX, pY, color,true)) {       //If there is one piece surrounding and then there are
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    /* this method is checking to see if there is a network or not
+     @param me checks to see if we are checking a network for you or your opponent
+     @param color checks to see which colof
+     */
+    protected boolean hasNetwork (int color, boolean me) {
+        DListArr top, bottom;
+        if (me) {       //boolean checking to see if you are checking the connection for you or me
+            // call a helper that creates a DListArr of items in each goal
+            top = topGoal(color, me);   //calling a function to create DListArr
+            if (top.length()==0) {      //if the top has no nodes, 
+                return false;
+            }
+            bottom = bottomGoal(color, me);
+            if (bottom.length()==0) {
+                return false;
+            }
+            try {
+                DListNodeArr curr = (DListNodeArr) top.front();
+                for (int i=0; i<top.length(); i++) {
+                    //connections = chipConnections( ((Integer)curr.item()[0]).intValue(), ((Integer)curr.item()[1]).intValue());
+                    DListArr network = new DListArr();
+                    network.insertFront(curr.item());
+                    curr = (DListNodeArr) curr.next();
+                    return finishNetwork(network,top, bottom);
+                }
+            }
+            catch (InvalidNodeException e1) {
+                System.out.println(e1);
+                System.out.println("error in hasNetwork");
+                System.exit(0);
+            }
+            //DListArr connections;     I don't think connections is needed, 
+            
+                return false;
+                //2 helpers, one that will finish the connections, one that checks turned corners
+                //finish network will use recursive calls to check and see if you have reached the end of the network
+        }
+        return false;
+    }
+    /* This helper is determining whether or not a network exists 
+     @param DList netSoFar is a DList of all of the nodes that we have traversed so far
+     @param DList top is all of the nodes in the top/left goal
+     @param DList bottom is all of the nodes in the bottom/right goal
+     
+     First, we will just go node by node in possible connections, we will see if the node before,current, and after are valid
+     
+     
+     */ 
+    protected boolean finishNetwork (DListArr netSoFar, DListArr top, DListArr bottom) {
+        /*logic for finish network, keep moving along the network
+         keep going and ad*/
+        try {
+            DListArr validConnections = chipConnections(((Integer)netSoFar.front().item()[0]).intValue(), ((Integer)netSoFar.front().item()[1]).intValue());// we are creating a list of valid connections using x and y
+            DListNodeArr currConnections =(DListNodeArr) validConnections.front();  // we examine the first item in these valid connections
+            if (netSoFar.length()>6) {          //We know that the node is always coming from the top
+                for (int i=0;i<validConnections.length();i++) {
+                    DListNodeArr currBottom  = (DListNodeArr) bottom.front();
+                    for (int j=0;j<bottom.length();j++) {
+                        if (currBottom.equals(currConnections)) {    //assumption if a node is valid and in the bottom, we assume
+                            if (turnsCorner((DListNodeArr)netSoFar.front().prev(),(DListNodeArr)netSoFar.front(),currConnections)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            DListNodeArr currSoFar=(DListNodeArr)netSoFar.front();
+            if (netSoFar.length()==1) {                 // check the special case that there is only 1 piece in the network so far
+                for (int i=0; i< netSoFar.length(); i++) {
+                    if (i==0) {
+                        currConnections = (DListNodeArr) validConnections.front();
+                    }
+                    else{
+                        currConnections = (DListNodeArr) currConnections.next();
+                    }
+                    DListArr net2 = netSoFar;
+                    net2.insertFront(currConnections.item());
+                    return finishNetwork(net2, top, bottom);
+                }
+            }
+            // This may be needed? DListNodeArr currSoFar = (DListNodeArr) netSoFar.front();
+            System.out.println(netSoFar.length()+" netSoFar Length");
+            nextConnection:
+            for (int i=0; i<validConnections.length();i++) {
+                if (i==0) {
+                    currConnections = (DListNodeArr) validConnections.front();
+                }
+                else{
+                    System.out.println("I need to be here right after 02");
+                    currConnections = (DListNodeArr)currConnections.next();
+                }
+                netChecker(netSoFar,top,bottom,currConnections,i);
+                if (turnsCorner((DListNodeArr)netSoFar.front().next(),(DListNodeArr)netSoFar.front(),currConnections)) {
+                    currSoFar=(DListNodeArr)netSoFar.front();
+                    for (int j=0; j<netSoFar.length() ; j++) {
+                        if (j!=0) {
+                            currSoFar=(DListNodeArr) currSoFar.next();
+                        }
+                        System.out.println("the curr node is {"+currSoFar.item()[0]+","+currSoFar.item()[1]+"}");
+                        System.out.println("the connect node is {"+currConnections.item()[0]+","+currConnections.item()[1]+"}");
+                        if (currSoFar.equals(currConnections)) {
+                            System.out.println("I am about to make a jump 01");
+                            continue nextConnection; // we will just want to break the for loop and move on to the next valid connection
+                        }
+                         // this will look to the next item in the soFar List
+                    }
+                    DListNodeArr currTop=(DListNodeArr)top.front();
+                    for (int j=0; j<top.length(); j++) {  //this will make sure the node is not in the top
+                        if (j!=0) {
+                            currTop = (DListNodeArr) currTop.next();
+                        }
+                        if (currConnections.equals(currTop)) { //if the current node is equal to anything in the top, it is invalid
+                            continue nextConnection;
+                        }
+                    }
+                    DListNodeArr currBottom=(DListNodeArr)bottom.front();
+                    for (int j=0; j<bottom.length(); j++) {  //can't be in the bottom, only the last node can
+                        if (j!=0) {
+                            currBottom = (DListNodeArr) currBottom.next();
+                        }
+                        if (currConnections.equals(currBottom)) { //if the current node is equal to anything in the top, it is invalid
+                            continue nextConnection;
+                        }
+                    }
+                    DListArr insList = netSoFar;
+                    //insArray[0] = ((Integer)currConnections.item()[0]).intValue();
+                    //insArray[1] = ((Integer)currConnections.item()[1]).intValue();
+                    insList.insertFront(currConnections.item()); //if it ins't in the list so far we will insert it
+                    // most recent item is in the front
+                    if (finishNetwork(insList,top,bottom)){
+                        return true;
+                    }//If we don't get a true value, we should just keep moving on with the rest of the nodes
+                }
+                // if we have exhausted through every single option in valid connections, then we know that we haven't found a connection
+                System.out.println("Do I go straight here?");
+            }
+            
+        }
+        catch (InvalidNodeException e1) {
+            System.out.println("error in finishNetwork");
+            System.out.println(e1);
+            System.exit(0);
+        }
+        
+        return false;
+    }
+    
+    /* This helper is used in order to determine whether or not three pieces "have turned" a corner
+     @param DList netSoFar is a DList of the nodes we have traversed so far
+     @param DList top is all of the nodes on the top/left goal
+     @param DList bottom is all of the nodes on the bottom/right goal
+     */
+    protected boolean turnsCorner (DListNodeArr first, DListNodeArr second, DListNodeArr third) {
+        /* There are 8 directions total
+         x-This is the x-direction
+         y-This is the y-direction
+         xyq1-this is a velctor with slope 1
+         xyq2-this is a vector with slope -1
+         pos-this is saying if the vector is in the positive direction
+         ASSUMPTIONS
+         If it went in the x-direction, the next piece cannot also be in the x-direction
+         if it went in the y-direction, it cannot go in the y direction again
+         The same applies to all other direction
+         */
+        try {
+            /*System.out.println(first.item()[0]+","+first.item()[1]+" first");
+            System.out.println(second.item()[0]+","+second.item()[1]+" 2nd");
+            System.out.println(third.item()[0]+","+third.item()[1]+" 3rd"); */
+            int xDiff = ((Integer)first.item()[0]).intValue()-((Integer)second.item()[0]).intValue();  //the difference between the current piece and piece before it
+            int yDiff = ((Integer)first.item()[1]).intValue()-((Integer)second.item()[1]).intValue();
+            boolean x=false, y=false, xq1=false, xq2=false;
+            if (Math.abs(xDiff)>0 && Math.abs(yDiff)>0) {
+                if ((yDiff>0 && xDiff>0) || (yDiff<0 && xDiff<0)) {
+                    xq1 = true;
+                }
+                else {
+                    xq2 = true;
+                }
+            }
+            else if (Math.abs(xDiff)>0) {
+                x=true;
+            }
+            else if (Math.abs(yDiff)>0) {
+                y=true;
+            }
+            else {
+                System.out.println("Error in turnsCorner");
+                System.out.println("Error not by exception");
+                System.exit(0);
+            }
+            //Second part of the function
+            xDiff = ((Integer)second.item()[0]).intValue()-((Integer)third.item()[0]).intValue();
+            yDiff = ((Integer)second.item()[1]).intValue()-((Integer)third.item()[1]).intValue();       //checking to see the difference between 3rd and 2nd
+            //System.out.println("new "+xDiff+" and "+yDiff);
+            if (Math.abs(xDiff)>0 && Math.abs(yDiff)>0) {
+                if ((yDiff>0 && xDiff>0) || (yDiff<0 && xDiff<0)) {
+                    if(xq1) {
+                        return false;
+                    }
+                }
+                else {
+                    if (xq2) {
+                        return false;
+                    }
+                }
+            }
+            else if (Math.abs(xDiff)>0) {
+                if(x) {
+                    return false;
+                }
+            }
+            else if (Math.abs(yDiff)>0) {
+                if (y) {
+                    return false;
+                }
+            }
+            /* else {
+                System.out.println("Error in turnsCorner");
+                System.out.println("Error not by exception");
+                System.exit(0);
+            } */
+            
+        }
+        catch (InvalidNodeException e1) {
+            System.out.println(e1);
+            System.out.println("error in turnsCorner");
+            System.exit(0);
+        }
+        return true;
+    }
+    /*This is a helper that returns a DList with all of the items in the top goal
+     Top is the same as left, bottom is the same as right
+     @param color takes in the color
+     @boolean me is whether or not the person is me
+     */
+    protected DListArr topGoal(int color, boolean me){
+        DListArr result = new DListArr();
+        Integer[] xy = new Integer[2];      //creating a new DList and a new int array
+        if (color==MachinePlayer.BLACK) {   // checking to see if the color is black
+            for (int i=1; i<7; i++) {   //if it is black, then we are looking at the top goals
+                if (me) {   
+                    if (board[i][0]==1) {    //checking to see if each of the spots have a piece in the top
+                        xy[0] = new Integer(i);              //x position
+                        xy[1] = new Integer(0);     //y position will always be a 0
+                        result.insertFront(xy);     //you will then insert this array into the new DList
+                    }
+                }
+                else {
+                    if (board[i][0]==2) {     //if we are looking for opponents connections, we will check for opponents spots, which is defined by 2
+                        xy[0] = new Integer(i);
+                        xy[1] = new Integer(0);
+                        result.insertFront(xy);
+                    }
+                }
+            }
+        }
+        else {
+            for (int i=1; i<7; i++) {
+                if (me) {
+                    if (board[0][i]==1) {        //if it is white, you will be looking at the left goal
+                        xy[0] = new Integer(0);
+                        xy[1] = new Integer(i);
+                        result.insertFront(xy);
+                    }
+                }
+                else {
+                    if (board[0][i]==2) {
+                        xy[0] = new Integer(0);
+                        xy[1] = new Integer(i);
+                        result.insertFront(xy);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    /* This is a helper that returns a DList with all of the items in the bottom goal
+     @param color takes in the color
+     @boolean me is whether or not the person is me
+     */
+    protected DListArr bottomGoal(int color, boolean me) {
+        DListArr result = new DListArr();
+        Integer[] xy = new Integer[2];
+        if (color==MachinePlayer.BLACK) {
+            for (int i=1; i<7; i++) {
+                if (me) {
+                    if (board[i][7]==1) {        // we are now checking for the very bottom goal
+                        xy[0] = new Integer(i);
+                        xy[1] = new Integer(7);
+                        result.insertFront(xy);
+                    }
+                }
+                else {
+                    if (board[i][7]==2) {
+                        xy[0] = new Integer(i);
+                        xy[1] = new Integer(7);
+                        result.insertFront(xy);
+                    }
+                }
+            }
+        }
+        else {
+            for (int i=1; i<7; i++) {
+                if (me) {
+                    if (board[7][i]==1) {
+                        xy[0] = new Integer(7);      // we are looking to check the right goals
+                        xy[1] = new Integer(i);
+                        result.insertFront(xy);
+                    }
+                }
+                else {
+                    if (board[7][i]==2) {
+                        xy[0] = new Integer(7);
+                        xy[1] = new Integer(i);
+                        result.insertFront(xy);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    
+    
+    /*  chipConnections() returns a DList that whose nodes hold arrays that represent all of chip's
+     *  direct connections on this MachinePlayer's Grid for this MachinePlayer. A chip's direct connection is a chip of the same
+     *  color that is in a location that would be able to be used as the next chip in a
+     *  network. The guidelines for this can be found in the readme file.
+     *
+     * @param x the first coordinate of the chip whose connections are sought.
+     * @param x the second coordinate of the chip whose connections are sought.
+     * @return a DList whose items are arrays that represent the coordinates of the chip's connections.
+     */
+    DListArr chipConnections(int x, int y) {
+    	DListArr connections = new DListArr();
+    	int color = this.board[x][y];
+    	for(int j = y - 1; j > -1; j--) {  // look N
+    		if(this.board[x][j] == EMPTY) {
+    			continue;
+    		}else if(this.board[x][j] == color) {
+    			connections.insertBack(new Integer[]{x, j});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int i = x + 1, j = y - 1; i < SIZE && j > -1; i++, j--) {  //look NE
+    		if(this.board[i][j] == EMPTY) {
+    			continue;
+    		}else if(this.board[i][j] == color) {
+    			connections.insertBack(new Integer[]{i, j});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int i = x + 1; i < SIZE; i++) {  //look E
+    		if(this.board[i][y] == EMPTY) {
+    			continue;
+    		}else if(this.board[i][y] == color) {
+    			connections.insertBack(new Integer[]{i, y});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int i = x + 1, j = y + 1; i < SIZE && j < SIZE; i++, j++) {  //look SE
+    		if(this.board[i][j] == EMPTY) {
+    			continue;
+    		}else if(this.board[i][j] == color) {
+    			connections.insertBack(new Integer[]{i, j});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int j = y + 1; j < SIZE; j++) {  //look S
+    		if(this.board[x][j] == EMPTY) {
+    			continue;
+    		}else if(this.board[x][j] == color) {
+    			connections.insertBack(new Integer[]{x, j});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int i = x -1, j = y + 1; i > -1 && j < SIZE ; i--, j++) {  //look SW
+    		if(this.board[i][j] == EMPTY) {
+    			continue;
+    		}else if(this.board[i][j] == color) {
+    			connections.insertBack(new Integer[]{i, j});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int i = x - 1; i > -1; i--) {  //look W
+    		if(this.board[i][y] == EMPTY) {
+    			continue;
+    		}else if(this.board[i][y] == color) {
+    			connections.insertBack(new Integer[]{i, y});
+    		}else {
+    			break;
+    		}
+    	}
+    	for(int i = x - 1, j = y - 1; i > -1 && j > -1; i--, j--) {  //look NW
+    		if(this.board[i][j] == EMPTY) {
+    			continue;
+    		}else if(this.board[i][j] == color) {
+    			connections.insertBack(new Integer[]{i, j});
+    		}else {
+    			break;
+    		}
+    	}
+    	return connections;
+    }
+    private void netChecker (DListArr soFar, DListArr top, DListArr bottom, DListNodeArr comp, int iters) {
+        try {
+            String result = "The Network so far is [ ";
+            DListNodeArr curr = (DListNodeArr) soFar.front();
+            for (int i=0; i<soFar.length(); i++) {
+                if (i!=0) {
+                    curr = (DListNodeArr) curr.next();
+                }
+                result += "("+curr.item()[0]+","+curr.item()[1]+")";
+            }
+            result += " ]";
+            System.out.println(result);
+            result = "The top so far is [ ";
+            curr = (DListNodeArr) top.front();
+            for (int i=0; i<top.length(); i++) {
+                if (i!=0) {
+                    curr = (DListNodeArr) curr.next();
+                }
+                result += "("+curr.item()[0]+","+curr.item()[1]+")";
+            }
+            result += " ]";
+            System.out.println(result);
+            result = "The bottom so far is [ ";
+            curr = (DListNodeArr) bottom.front();
+            for (int i=0; i<bottom.length(); i++) {
+                if (i!=0) {
+                    curr = (DListNodeArr) curr.next();
+                }
+                result += "("+curr.item()[0]+","+curr.item()[1]+")";
+            }
+            result = "The node we want to compare with is [ ";
+            curr = (DListNodeArr) comp;
+            result += "("+curr.item()[0]+","+curr.item()[1]+")";
+            result += " ]";
+            System.out.println(result);
+            
+            
+            result = "The number or iterations is in this loop is "+iters;
+            System.out.println(result);
+        }
+        catch (InvalidNodeException e1) {
+            System.out.println(e1);
+            System.out.println("error in netChecker");
+            System.exit(0);
+        }
+    }
+
+    DList validMoves() {
+    	Move aMove;
+    	DList moves = new DList();
+    	DListArr mySpaces = this.myOccupiedSpaces();
+    	DListNodeArr currentMy = (DListNodeArr) (mySpaces.front());
+    	DListArr emptySpaces = this.emptySpaces();
+    	DListNodeArr currentEmpty = (DListNodeArr) (emptySpaces.front());
+    	try{
+    		if(this.me.moves >= 10) { //checks to see if the player has made 10 moves and therefore has to make a step move.
+        		while(currentMy.isValidNode()) {
+        			while(currentEmpty.isValidNode()) {
+        				Integer[] currEmptyArray = (Integer[]) currentEmpty.item();
+        				Integer[] currMyArray = (Integer[]) currentMy.item();
+        				aMove = new Move(currEmptyArray[0], currEmptyArray[1], currMyArray[0], currMyArray[1]);
+        				if(this.isValid(aMove,  this.me.myColor)) {
+        					moves.insertBack(aMove);
+        				}
+        				currentEmpty = (DListNodeArr) (currentEmpty.next());
+        			}
+        			currentEmpty = (DListNodeArr) (emptySpaces.front());
+        			currentMy = (DListNodeArr) (currentMy.next());
+        		}
+        	} else { //otherwise the player has not made 10 moves yet and the player must make an add move.
+        		while(currentEmpty.isValidNode()) {
+        			Integer[] currEmptyArray = (Integer[]) currentEmpty.item();
+        			aMove = new Move(currEmptyArray[0], currEmptyArray[1]);
+        			if(this.isValid(aMove, this.me.myColor)) { //checks to see if the newly generated move is valid.
+        				moves.insertBack(aMove);
+        			}
+        			currentEmpty = (DListNodeArr) (currentEmpty.next());
+        		}
+        	}
+    	}
+    	catch(InvalidNodeException e1) {
+            System.out.println("error in ValidMoves");
+            System.exit(0);
+    		System.out.println(e1);
+    	}
+    	return moves;
+    }
+    
+    /* emptySpaces() is a helper method that generates a list of arrays of Integers that represents
+     * the locations of all the empty spaces on the board.
+     */
+    protected DListArr emptySpaces() {
+    	DListArr emptys = new DListArr();
+    	for(int i = 0; i < SIZE; i++) {
+    		for(int j = 0; j < SIZE; j++) {
+    			if(this.board[i][j] == EMPTY) {
+    				Integer[] arr = new Integer[2];
+    				arr[0] = new Integer(i);
+    				arr[1] = new Integer(j);
+    				emptys.insertBack(arr);
+    			}
+    		}
+    	}
+    	return emptys;
+    }
+    
+    /* myOccupiedSpaces() is a helper method that generates a list of arrays of Integers that represents
+     * the locations of all of this Grid's me's occupied spaces.
+     */
+    protected DListArr myOccupiedSpaces() {
+    	DListArr myOccupied = new DListArr();
+    	for(int i = 0; i < SIZE; i++) {
+    		for(int j = 0; j < SIZE; j++) {
+    			if(this.board[i][j] == MY_TOKEN) {
+    				Integer[] arr = new Integer[2];
+    				arr[0] = new Integer(i);
+    				arr[1] = new Integer(j);
+    				myOccupied.insertBack(arr);
+    			}
+    		}
+    	}
+    	return myOccupied;
+    }
+    
+    public static void main(String[] args) {
+        MachinePlayer person = new MachinePlayer(0);
+        System.out.println("Starting tests...");
+        System.out.println("Move 0,0 should be false"+person.forceMove(new Move(0,0)));
+        System.out.println("Move 0,7 should be false"+person.forceMove(new Move(0,7)));
+        System.out.println("Move 7,0 should be false"+person.forceMove(new Move(7,0)));
+        System.out.println("Move 7,7 should be false"+person.forceMove(new Move(7,7)));
+        System.out.println("Move 3,3 should be true"+person.forceMove(new Move(3,3)));
+        System.out.println("Move 5,5 should be true"+person.forceMove(new Move(5,5)));
+        System.out.println("Move 3,4 should be true"+person.forceMove(new Move(3,4)));
+        System.out.println("Move 4,4 should be false"+person.forceMove(new Move(4,4)));
+        System.out.println("Move 3,3 should be false"+person.forceMove(new Move(3,3)));
+        System.out.println("Move 0,4 should be true"+person.forceMove(new Move(0,4)));
+        System.out.println("Move 4,0 should be false"+person.forceMove(new Move(4,0)));
+        
+        
+        
+        System.out.println("Starting tests for network connection");
+        System.out.println("Naive case with no opponent");
+        person = new MachinePlayer(0);
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        System.out.println("Forcing a move at 2,0"+person.forceMove(new Move(2,0)));
+        System.out.println("Forcing a move at 2,4"+person.forceMove(new Move(2,4)));
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        //need to fix network code for inserting second item (check for a special case)
+        System.out.println("Forcing a move at 3,3"+person.forceMove(new Move(3,3)));
+        System.out.println("Forcing a move at 5,3"+person.forceMove(new Move(5,3)));
+        System.out.println("Forcing a move at 6,4"+person.forceMove(new Move(6,4)));
+        System.out.println("Forcing a move at 3,7"+person.forceMove(new Move(3,7)));
+        System.out.println("checking for network, should be true"+person.myGrid.hasNetwork(person.myColor,true));
+        
+        /*
+        
+        System.out.println("Networks with not enough turns");
+        person = new MachinePlayer(0);
+        System.out.println("Forcing a move at 2,0"+person.forceMove(new Move(2,0)));
+        System.out.println("Forcing a move at 2,4"+person.forceMove(new Move(2,4)));
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        //need to fix network code for inserting second item (check for a special case)
+        System.out.println("Forcing a move at 3,3"+person.forceMove(new Move(3,3)));
+        System.out.println("Forcing a move at 4,3"+person.forceMove(new Move(4,3)));
+        System.out.println("Forcing a move at 4,5"+person.forceMove(new Move(4,5)));
+        System.out.println("Forcing a move at 4,7"+person.forceMove(new Move(4,7)));
+        System.out.println("checking for network, should be true"+person.myGrid.hasNetwork(person.myColor,true));
+        
+        
+        System.out.println("Valid network with 9 pieces");
+        person = new MachinePlayer(0);
+        System.out.println("Forcing a move at 1,0"+person.forceMove(new Move(1,0)));
+        System.out.println("Forcing a move at 2,1"+person.forceMove(new Move(2,1)));
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        System.out.println("Forcing a move at 2,3"+person.forceMove(new Move(2,3)));
+        System.out.println("Forcing a move at 3,4"+person.forceMove(new Move(3,4)));
+        System.out.println("Forcing a move at 5,4"+person.forceMove(new Move(5,4)));
+        System.out.println("Forcing a move at 6,3"+person.forceMove(new Move(6,3)));
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        System.out.println("Forcing a move at 6,1"+person.forceMove(new Move(6,1)));
+        System.out.println("Forcing a move at 5,1"+person.forceMove(new Move(5,1)));
+        System.out.println("Forcing a move at 1,5"+person.forceMove(new Move(1,5)));
+        System.out.println("Forcing a move at 1,7"+person.forceMove(new Move(1,7)));
+        System.out.println("checking for network, should be true"+person.myGrid.hasNetwork(person.myColor,true));
+        
+        System.out.println("Valid case with opponent blocking opponent");
+        person = new MachinePlayer(0);
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        System.out.println("Forcing a move at 2,0"+person.forceMove(new Move(2,0)));
+        System.out.println("Forcing a move at 2,4"+person.forceMove(new Move(2,4)));
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+        //need to fix network code for inserting second item (check for a special case)
+        System.out.println("Forcing a move at 3,3"+person.forceMove(new Move(3,3)));
+        System.out.println("Forcing a move at 5,3"+person.forceMove(new Move(5,3)));
+        System.out.println("Forcing a move at 6,5"+person.forceMove(new Move(6,5)));
+        System.out.println("Forcing a move at 4,7"+person.forceMove(new Move(4,7)));
+        System.out.println("checking for network, should be true"+person.myGrid.hasNetwork(person.myColor,true));
+        System.out.println("Placing enemy piece at 4,3");
+        person.myGrid.board[4][3]=2;
+        System.out.println("checking for network, should be false"+person.myGrid.hasNetwork(person.myColor,true));
+         */
+    }
+}
+        // This code goes through the loop and checks to see if x is less than 0 greater than 7, and y is less than 7 or greater than 7, if any of these conditions exist, you don't look. If it doesn, you don't look
+

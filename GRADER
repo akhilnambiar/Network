@@ -1,0 +1,152 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf340
+\cocoascreenfonts1{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;\red217\green11\blue0;\red63\green95\blue191;\red127\green159\blue191;
+\red221\green32\blue103;}
+\margl1440\margr1440\vieww17860\viewh13060\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f0\fs24 \cf0 Kevin Follmer cs61b-vf\
+Akhil Nambiar cs61b-kc
+\b \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+Classes needed:
+\b0 \
+MachinePlayer\
+Grid\
+Move\
+DList\
+DListNode\
+Best (extends Move)\
+GamePiece (?)\
+\cf2 We could use the ArrayList Data structure, look it up. It is easier to implement. Up to you\cf0 \
+\
+
+\b Modules:
+\b0 \
+-Valid Move Checker (Akhil)\
+	implemented in MachinePlayer\
+        
+\f1\fs22 \cf3 /**\cf0 \
+\pard\pardeftab720
+\cf3    *  isValid() returns true if aMove is a valid move on this Grid; returns false if aMove        \
+   *  is not valid on this Grid.\cf0 \
+\cf3    *  See the readme file for description of valid moves. If aMove is null, return false.\cf0 \
+\cf3    *\cf0 \
+\cf3    *  \cf4 @param\cf3  aMove the move whose validity is sought.\
+   *  \cf4 @param\cf3  int of which color you are dealing with\cf0 \
+\cf3    *  \cf4 @return\cf3  boolean value correlated with the validity of aMove\cf0 \
+\cf3    */
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 \
+	boolean isValidMove(Move aMove)\
+\
+\
+-Valid Move List Generator (Kevin)\
+	implemented in MachinePlayer\
+		
+\f1\fs22  \cf3 /**\cf0 \
+\pard\pardeftab720
+\cf3    *  validMoves() returns a DList of all valid Moves for this MachinePlayer with this MachinePlayer's Grid.\cf0 \
+\cf3    *  See the readme file for description of valid moves.\cf0 \
+\cf3    *\cf0 \
+\cf3    *\cf0 \
+\cf3    *  \cf4 @return\cf3  a DList of Moves that are valid on this MachinePlayer's Grid for this MachinePlayer.\
+   */\
+
+\f0\fs24 \cf0 	DList validMoves() \cf2 or an ArrayList\cf0 \
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 -Chip Connections Finder (Kevin)\
+	implemented in MachinePlayer\
+\
+\
+        
+\f1\fs22 \cf3 /**\cf0 \
+\pard\pardeftab720
+\cf3    *  chipConnections() returns a DList that is a list of all of chip's\cf0 \
+\cf3    *  direct connections on this MachinePlayer's Grid for this MachinePlayer. A chip's direct connection is a chip of the same\cf0 \
+\cf3    *  color that is in a location that would be able to be used as the next chip in a\
+   *  network. The guidelines for this can be found in the readme file.\
+   *\cf0 \
+\cf3    *  \cf4 @param\cf3  chip the GamePiece whose connections are sought.\
+	\cf5 Chip connections will take in the X and the Y for each chip.\cf0 \
+\cf3    *  \cf4 @return\cf3  a DList of GamePiece objects that represent all of chip's connections\cf0 \
+\cf3    */
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 	DList chipConnections(GamePiece chip)\
+	\
+\
+-Network Identifier (Akhil)\
+	implemented in Grid\
+	\
+        
+\f1\fs22 \cf3 /**\cf0 \
+\pard\pardeftab720
+\cf3    *  hasNetwork() returns true if this player has a winning network; returns false if \
+   *  this player does not have a winning network.\cf0 \
+\cf3    *  See the readme file for description of winning networks.\cf0 \
+\cf3    *\cf0 \
+\cf3    *  \cf4 @return\cf3  boolean value depending on whether this player has a network.\cf0 \
+\cf3    */
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 	boolean hasNetwork()\
+\
+\
+-Evaluation Function (Akhil)\
+	implemented in MachinePlayer\
+\
+        
+\f1\fs22 \cf3 /**\cf0 \
+\pard\pardeftab720
+\cf3    *  assignScore() returns a floating point value between -1 and 1 that represents the\
+   *  likelihood of this MachinePlayer winning with its grid. A positive number means\cf0 \
+\cf3    *  that this MachinePlayer is likely to win and a negative number means that the\cf0 \
+\cf3    *  opponent is likely to win.\
+   *	\
+   *  @param Grid that you want \cf0 \
+\cf3    *  \cf4 @return\cf3  int value correlated with the validity of aMove\cf0 \
+\cf3    */
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 	double assignScore()\
+\
+\
+-Game Tree Search (Kevin)\
+	implemented in MachinePlayer\
+\
+        
+\f1\fs22 \cf3 /**\cf0 \
+\pard\pardeftab720
+\cf3    *  chooseMove() returns the best move for this MachinePlayer based on its Grid. It also\
+   *  updates the game board to account for this move.\cf0 \
+\cf3    * \cf0 \
+\cf3    *\cf0 \
+\cf3    *  \cf4 @param\cf3  side the side that chooseMove is currently processing, either you or the opponent\
+   *  @param alpha the alpha value used for alpha beta pruning\
+   *  @param beta the beta value used for alpha beta pruning\cf0 \
+\cf3    *  \cf4 @return\cf3  the Best Move for this MachinePlayer to play.\cf0 \
+\cf3    */
+\f0\fs24 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 	Best chooseMove(boolean side, int alpha, int beta)\
+\
+New Methods or Fields\
+
+\b Machine Player
+\b0 \
+Turncount - will keep tract of how many turns;\
+myColor = which color I am\
+
+\b Grid
+\b0 \
+MyPlayer - this is just a pointer to the MachinePlayer so it knows who is owning it\
+\
+\
+\
+\
+}

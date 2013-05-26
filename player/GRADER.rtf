@@ -1,0 +1,252 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf340
+\cocoascreenfonts1{\fonttbl\f0\fmodern\fcharset0 Courier;\f1\fswiss\fcharset0 Helvetica;\f2\fmodern\fcharset0 Courier-Bold;
+\f3\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green116\blue0;\red170\green13\blue145;\red2\green61\blue16;
+}
+\margl1440\margr1440\vieww17860\viewh13060\viewkind0
+\deftab720
+\pard\pardeftab720
+
+\f0\fs24 \cf0                                      GRADER\
+\
+Name of student running submit: Akhil Nambiar\
+Login of student running submit: cs61b-kc\
+\
+Second team member's name: Kevin Follemer\
+Second team member's login: cs61b-vf\
+\
+Third team member's name (if any):\
+Third team member's login:\
+\
+IMPORTANT:  Once you've submitted Project 2 once, the same team member should\
+submit always.  If a different teammate must submit, inform cs61b@cory.eecs of\
+all the details.  Include a complete list of team members, and let us know\
+which submission you want graded.\
+\
+If you've submitted your project once, or even written a substantial amount of\
+code together, you may not change partners without the permission of the\
+instructor.\
+===============================================================================\
+Does your program compile without errors?\
+Yes\
+\
+Have you tested your program on the machines in the Soda CS 61B lab?\
+Yes, remotely\
+\
+Did you successfully implement game tree search?  Did you successfully\
+implement alpha-beta pruning?  Are there any limitations on it?  What is the\
+default number of search levels set by the one-parameter MachinePlayer\
+constructor?\
+Yes, it works fine. We set it to 2 levels\
+\
+Describe your board evaluation function in some detail.\
+We are taking the total amount of connections we have and subtracting the total amount of connections that the opponent has.\
+In addition, we give an additional value if either side has both the goals occupied.\
+Does your MachinePlayer use any special method of choosing the first few moves?\
+No\
+\
+Is there anything else the graders should know to help them read your project?\
+It shouldn't be too bad. We created a DListArr data type that is the same DList except it stores object[].\
+In the board, 1==me and 2==opponent pieces.\
+\
+\
+Describe the classes, modules, and interfaces you designed before and while you\
+implemented the project.  Your description should include:\
+  -  A list of the classes your program uses.\
+  -  A list of each of the "modules" used in or by MachinePlayer, similar to\
+     the list in the "Teamwork" section of the README (but hopefully more\
+     detailed).\
+  -  For each module, list the class(es) the module is implemented in.\
+  -  For each module, say which of your team members implemented it.\
+  -  For each module, describe its interface--specifically, the prototype and\
+     behavior of each method that is available for external callers (outside\
+     the module) to call.  Don't include methods that are only meant to be\
+     called from within the module.\
+\
+     For each method, provide (1) a method prototype and (2) a complete,\
+     unambiguous description of the behavior of the method/module.  This\
+     description should also appear before the method in your code's comments.\
+\
+You will probably need to change some of your design decisions as you go; be\
+sure to modify this file to reflect these changes before you submit your\
+project.  Your design of classes and interfaces with be worth about 10% of your\
+grade.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\pardirnatural
+
+\f1 \cf0 \
+\ul A list of the classes\
+\ulnone DListArr\
+DListNodeArr\
+DList\
+DListNode\
+List\
+ListNode\
+ListNodeArr\
+ListArr\
+Best\
+Move\
+MachinePlayer\
+Grid\
+InvalidNodeException\
+\
+\ul Packages\
+\ulnone list\
+player\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+
+\b \cf0 Modules:\
+\pard\pardeftab720
+
+\f0\b0 \cf0   1)  determining whether a move is valid,\
+	Description: This is basically going to look and check if you are putting the pieces in the corners, putting pieces in the wrong goal or if they are placed in clusters\
+  2)  generating a list of all valid moves,\
+	
+\f1 Description: This module will generate all the valid moves for a certain player by checking all valid positions after checking whether the move must be a step move or an add move.
+\f0 \
+  3)  finding the chips (of the same color) that form connections with a chip,\
+  4)  determining whether a game board contains any networks for a given\
+      player (very difficult; put your smartest teammate on this),\
+  5)  computing an evaluation function for a board (possibly difficult), and\
+	Description: We are mainly looking at the total connections for each player\
+  6)  performing minimax tree search (difficult:\
+	Basically implemented minimax like we did in class.\
+\
+\
+\
+\pard\pardeftab720
+
+\f2\b \cf0 Module 1
+\f1\b0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+\cf0 -Valid Move Checker (Akhil)\
+	implemented in MachinePlayer\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\fs22 \cf0 \CocoaLigature0     \cf2 /* \
+	 * isValid() looks to see if a move is valid, it will take in a Move and an int representing the color and return a true or a false\
+     * \
+	 * @param aMove, a Move that will be placed on this Grid to be checked for validity.\
+     * @param color, the color of the piece of the move maker\
+     * @return boolean, if the move is valid or not\
+     *\
+     */\cf0 \
+    \cf3 protected\cf0  \cf3 boolean\cf0  isValid(Move aMove, \cf3 int\cf0  color) \{
+\f1\fs24 \CocoaLigature1 \
+
+\f3\fs22 \cf2 \CocoaLigature0 /* \
+	 * surround() is a helper that will check the surroundings to check and see if there are a cluster of chips around it \
+     * @param x, The x location of the piece\
+     * @param y, The y location of the piece\
+     * @param color, The color of the piece\
+     * @param twice is used to make sure surround doesn't use infinite recursive calls, only to be set true within surround\
+     * @return checks to see if  the surrounding pieces are cleared to have another one.\
+     */\cf0 \
+    \cf3 private\cf0  \cf3 boolean\cf0  surround(\cf3 int\cf0  x, \cf3 int\cf0  y, \cf3 int\cf0  color, \cf3 boolean\cf0  twice)\
+\
+\
+\pard\pardeftab720
+
+\f2\b\fs24 \cf0 \CocoaLigature1 Module 2\
+\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\b0\fs22 \cf0 \CocoaLigature0     \cf2 /* validMoves() generates a list of valid moves that this Grid's me or\
+     * the opponent can make on this Grid in its current state.\
+     *\
+     * @param isMe indicates if we are determining the validMoves for me or the opponent.\
+     *\
+     * @return a DList whose items are every valid move that this Grid's me or the opponent can make.\
+     */\cf0 \
+    protected DList validMoves(\cf3 boolean\cf0  isMe) \{\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+\cf0 \
+\pard\pardeftab720
+
+\f2\b\fs24 \cf0 \CocoaLigature1 Module 3
+\f3\b0\fs22 \CocoaLigature0 \
+\pard\tx529\pardeftab529\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+
+\f1\fs24 \cf0 \CocoaLigature1 -Chip Connections Finder (Kevin)\
+	implemented in MachinePlayer\
+\
+\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\fs22 \cf0 \CocoaLigature0     \cf2 /*  chipConnections() returns a DListArr whose nodes hold arrays that represent all of chip's\
+     *  direct connections on this MachinePlayer's Grid for this MachinePlayer. A chip's direct connection is a chip of the same\
+     *  color that is in a location that would be able to be used as the next chip in a\
+     *  network. The guidelines for this can be found in the readme file.\
+     *\
+     * @param x the first coordinate of the chip whose connections are sought.\
+     * @param y the second coordinate of the chip whose connections are sought.\
+     * @return a DListArr whose items are arrays of Integers that represent the coordinates of the chip's connections.\
+     */\cf0 \
+    \cf3 protected\cf0  DListArr chipConnections(\cf3 int\cf0  x, \cf3 int\cf0  y) \{
+\f1\fs24 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+\cf0 \
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\fs22 \cf0 \CocoaLigature0 \
+\
+\pard\pardeftab720
+
+\f2\b\fs24 \cf0 \CocoaLigature1 Module 4\
+	implemented in Grid\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\b0\fs22 \cf0 \CocoaLigature0     \cf2 /* hasNetwork() checks to see if there is a network or not. The rules for a network can be found in the readme.\
+     * \
+	 * @param color checks to see which color we want to know has a network\
+	 * @param me checks to see if we are checking a network for me or my opponent\
+     * \
+     * @return boolean on if there is a Network\
+     */\cf0 \
+    \cf3 protected\cf0  \cf3 boolean\cf0  hasNetwork (\cf3 int\cf0  color, \cf3 boolean\cf0  me) \
+\
+\
+\
+\pard\pardeftab720
+
+\f2\b\fs24 \cf0 \CocoaLigature1 Module 5\
+	implemented in MachinePlayer\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\b0\fs22 \cf0 \CocoaLigature0  \cf2 /**\
+   *  evaluation() returns a floating point value between -10 and 10 that represents the\
+   *  likelihood of this MachinePlayer winning with its grid. A positive number means\
+   *  that this MachinePlayer is likely to win and a negative number means that the\
+   *  opponent is likely to win.\
+   *\
+   *  \cf4 @param\cf2  Grid that you want\
+   *  \cf4 @return\cf2  int value correlated with the validity of aMove\
+   */\cf0 \
+    \cf3 protected\cf0  \cf3 int\cf0  evaluation(Grid evalGrid, \cf3 boolean\cf0  who)
+\f2\b\fs24 \CocoaLigature1 \
+\pard\pardeftab720
+\cf0 \
+\
+Module 6\
+	implemented in MachinePlayer\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f3\b0\fs22 \cf0 \CocoaLigature0 	\cf2 /*\
+	 * minimax() is the recursive game tree search algorithm that returns a Best containing the\
+	 * best move and an associated score for alpha-beta pruning.\
+	 *\
+	 * @param color is the color of the player that is currently being checked.\
+	 * @param alpha is the alpha value for alpha-beta pruning.\
+	 * @param beta is the beta value for alpha-beta pruning.\
+	 * @param depth is an int that represents how many levels of moves the search has gone.\
+	 *\
+	 * @return a Best that contains the best move and an associated score for alpha-beta pruning.\
+	 *\
+	 */\cf0 \
+	\cf3 protected\cf0  Best minimax(\cf3 int\cf0  color, \cf3 int\cf0  alpha, \cf3 int\cf0  beta, \cf3 int\cf0  depth) \{\
+\pard\tx529\pardeftab529\pardirnatural
+
+\f1\fs24 \cf0 \CocoaLigature1 \
+}
